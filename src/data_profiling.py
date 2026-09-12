@@ -67,6 +67,13 @@ def profile(df: pd.DataFrame, target: str | None = None) -> dict:
             and any(kw in col.lower() for kw in suspicious_keywords)
         ]
         report["leakage_candidates"] = leakage_flags
+        
+        target_counts = df[target].value_counts()
+        target_pct = (target_counts / len(df) * 100).round(2)
+        report["target_balance"] = {
+            str(val): {"count": int(target_counts[val]), "pct": float(target_pct[val])}
+            for val in target_counts.index
+        }
 
     return report
 
@@ -128,6 +135,14 @@ def write_markdown_report(report: dict, dataset_name: str, output_dir: str = "re
                 lines.append(f"- ⚠️ `{col}` — name suggests it may be computed after the target is known. Investigate before using as a feature.")
         else:
             lines.append("No obviously suspicious column names found.")
+        lines.append("")
+        
+    if "target_balance" in report:
+        lines.append("## Target Balance")
+        lines.append("| Value | Count | Percentage |")
+        lines.append("|---|---|---|")
+        for val, info in report["target_balance"].items():
+            lines.append(f"| {val} | {info['count']} | {info['pct']}% |")
         lines.append("")
 
     out_path.write_text("\n".join(lines))

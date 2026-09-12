@@ -52,3 +52,9 @@ Generated: 2026-09-13
 
 ## Potential Target Leakage Candidates
 No obviously suspicious column names found.
+
+## Target Balance
+| Value | Count | Percentage |
+|---|---|---|
+| 0 | 549 | 61.62% |
+| 1 | 342 | 38.38% |
