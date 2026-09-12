@@ -1,0 +1,11 @@
+{
+  "drop_columns": ["Ticket", "Name", "PassengerId", "Cabin"],
+  "impute": {
+    "Age": {"strategy": "median"},
+    "Embarked": {"strategy": "mode"}
+  },
+  "drop_duplicates": true,
+  "add_flags": {
+    "Cabin": "has_cabin"
+  }
+}

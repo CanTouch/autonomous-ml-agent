@@ -1,0 +1,5 @@
+{
+  "binary_encode": {"Sex": {"male": 0, "female": 1}},
+  "one_hot_encode": ["Embarked"],
+  "target_column": "Survived"
+}
