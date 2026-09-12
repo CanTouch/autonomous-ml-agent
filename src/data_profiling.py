@@ -67,13 +67,17 @@ def profile(df: pd.DataFrame, target: str | None = None) -> dict:
             and any(kw in col.lower() for kw in suspicious_keywords)
         ]
         report["leakage_candidates"] = leakage_flags
-        
-        target_counts = df[target].value_counts()
-        target_pct = (target_counts / len(df) * 100).round(2)
-        report["target_balance"] = {
-            str(val): {"count": int(target_counts[val]), "pct": float(target_pct[val])}
-            for val in target_counts.index
-        }
+        target_unique = df[target].nunique()        
+        if target_unique <= 20:
+            target_counts = df[target].value_counts()
+            target_pct = (target_counts / len(df) * 100).round(2)
+            report["target_balance"] = {
+                str(val): {"count": int(target_counts[val]), "pct": float(target_pct[val])}
+                for val in target_counts.index
+            }
+        else:
+            report["target_type"] = "continuous"
+            report["target_unique_count"] = int(target_unique)
 
     return report
 
@@ -143,6 +147,13 @@ def write_markdown_report(report: dict, dataset_name: str, output_dir: str = "re
         lines.append("|---|---|---|")
         for val, info in report["target_balance"].items():
             lines.append(f"| {val} | {info['count']} | {info['pct']}% |")
+        lines.append("")
+    
+    if "target_type" in report and report["target_type"] == "continuous":
+        lines.append("## Target Type")
+        lines.append(f"Target `{report.get('target_unique_count', '?')}` unique values — "
+                      f"treated as continuous (regression target), not categorical. "
+                      f"Class-balance reporting skipped.")
         lines.append("")
 
     out_path.write_text("\n".join(lines))
