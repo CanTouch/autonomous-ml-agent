@@ -26,6 +26,16 @@ def run_model_selection(df: pd.DataFrame, target: str, folds: int = 10):
     X = df.drop(columns=[target])
     y = df[target]
 
+    if y.isnull().any():
+        n_missing = y.isnull().sum()
+        raise ValueError(
+            f"Target column '{target}' has {n_missing} missing value(s). "
+            f"Model selection requires a complete target column."
+        )
+    if X.isnull().any().any():
+        bad_cols = X.columns[X.isnull().any()].tolist()
+        raise ValueError(f"Feature columns {bad_cols} still contain missing values.")
+
     cv = KFold(n_splits=folds, shuffle=True, random_state=42)
 
     models = {
