@@ -1,0 +1,12 @@
+id,age,income,category,target,notes
+1,25,50000,A,1,
+2,,60000,B,0,fine
+3,30,,A,1,
+1,25,50000,A,1,
+4,abc,45000,C,,weird age
+5,40,999999999,,0,huge income
+6,-5,30000,B,1,negative age
+7,22,40000,A,1,
+8,,,,,  
+9,99,35000,D,0,new category
+10,28,42000,A,1,

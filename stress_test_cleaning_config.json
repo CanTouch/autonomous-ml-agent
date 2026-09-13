@@ -1,0 +1,8 @@
+{
+  "drop_columns": ["notes"],
+  "impute": {
+    "income": {"strategy": "median"},
+    "category": {"strategy": "mode"}
+  },
+  "drop_duplicates": true
+}
