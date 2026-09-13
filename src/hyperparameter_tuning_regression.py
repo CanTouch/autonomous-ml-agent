@@ -50,6 +50,16 @@ def tune(df: pd.DataFrame, target: str, model_key: str, scoring: str = "neg_mean
     X = df.drop(columns=[target])
     y = df[target]
 
+    if y.isnull().any():
+        n_missing = y.isnull().sum()
+        raise ValueError(
+            f"Target column '{target}' has {n_missing} missing value(s). "
+            f"Clean the target before tuning."
+        )
+    if X.isnull().any().any():
+        bad_cols = X.columns[X.isnull().any()].tolist()
+        raise ValueError(f"Feature columns {bad_cols} still contain missing values.")
+
     spec = PARAM_GRIDS[model_key]
     cv = KFold(n_splits=folds, shuffle=True, random_state=42)
 
