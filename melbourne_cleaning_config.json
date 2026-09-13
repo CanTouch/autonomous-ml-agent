@@ -1,0 +1,12 @@
+{
+  "drop_columns": ["Address", "BuildingArea"],
+  "impute": {
+    "YearBuilt": {"strategy": "median"},
+    "CouncilArea": {"strategy": "unknown"},
+    "Car": {"strategy": "median"}
+  },
+  "drop_duplicates": true,
+  "add_flags": {
+    "BuildingArea": "has_building_area"
+  }
+}
