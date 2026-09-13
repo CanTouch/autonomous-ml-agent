@@ -1,5 +1,5 @@
 {
-  "drop_columns": ["Address", "BuildingArea"],
+  "drop_columns": ["Address", "BuildingArea", "Date"],
   "impute": {
     "YearBuilt": {"strategy": "median"},
     "CouncilArea": {"strategy": "unknown"},

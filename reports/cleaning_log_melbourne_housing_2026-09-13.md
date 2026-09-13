@@ -5,4 +5,4 @@ Generated: 2026-09-13
 - Imputed `YearBuilt` (5375 missing) with median = 1970.00.
 - Filled `CouncilArea` (1369 missing) with 'Unknown' category.
 - Imputed `Car` (62 missing) with median = 2.00.
-- Dropped columns: Address, BuildingArea.
+- Dropped columns: Address, BuildingArea, Date.
