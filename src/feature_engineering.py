@@ -1,13 +1,6 @@
 """
 Feature engineering helper for the feature-engineering skill.
 Usage: ./.venv/bin/python src/feature_engineering.py <path_to_cleaned_dataset> --config <path_to_config.json>
-
-Config format:
-{
-  "binary_encode": {"Sex": {"male": 0, "female": 1}},
-  "one_hot_encode": ["Embarked"],
-  "target_column": "Survived"
-}
 """
 import argparse
 import json
@@ -42,6 +35,14 @@ def engineer_features(df: pd.DataFrame, config: dict):
         df = pd.get_dummies(df, columns=one_hot_cols, drop_first=True)
         new_cols = set(df.columns) - before_cols
         log.append(f"One-hot encoded {one_hot_cols} → new columns: {sorted(new_cols)}.")
+
+    for col in config.get("frequency_encode", []):
+        if col in df.columns and col != target:
+            freq_map = df[col].value_counts(normalize=True)
+            new_col = f"{col}_freq"
+            df[new_col] = df[col].map(freq_map)
+            df = df.drop(columns=[col])
+            log.append(f"Frequency-encoded `{col}` -> `{new_col}` (replaced raw column with its occurrence rate).")
 
     return df, log
 

@@ -1,0 +1,5 @@
+{
+  "one_hot_encode": ["Type", "Method", "CouncilArea", "Regionname"],
+  "frequency_encode": ["Suburb", "SellerG"],
+  "target_column": "Price"
+}
