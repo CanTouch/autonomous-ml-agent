@@ -49,14 +49,19 @@ def profile(df: pd.DataFrame, target: str | None = None) -> dict:
             "outlier_flag": flag,
         }
 
-    cat_cols = df.select_dtypes(include=["str", "category"]).columns
+    cat_cols = df.select_dtypes(include=["object", "category", "str"]).columns
     report["categorical_stats"] = {}
     for col in cat_cols:
         nunique = df[col].nunique()
         high_cardinality = bool(nunique > 0.5 * len(df))
+        non_null_count = df[col].notna().sum()
+        numeric_convertible = pd.to_numeric(df[col], errors="coerce")
+        pct_numeric = numeric_convertible.notna().sum() / non_null_count if non_null_count > 0 else 0
+        looks_numeric_but_mixed = bool(0 < pct_numeric < 1.0 and pct_numeric > 0.5)
         report["categorical_stats"][col] = {
             "unique_count": int(nunique),
             "high_cardinality_flag": high_cardinality,
+            "mixed_numeric_flag": looks_numeric_but_mixed,
         }
 
     if target and target in df.columns:
@@ -67,7 +72,8 @@ def profile(df: pd.DataFrame, target: str | None = None) -> dict:
             and any(kw in col.lower() for kw in suspicious_keywords)
         ]
         report["leakage_candidates"] = leakage_flags
-        target_unique = df[target].nunique()        
+
+        target_unique = df[target].nunique()
         if target_unique <= 20:
             target_counts = df[target].value_counts()
             target_pct = (target_counts / len(df) * 100).round(2)
@@ -126,7 +132,12 @@ def write_markdown_report(report: dict, dataset_name: str, output_dir: str = "re
         lines.append("| Column | Unique Values | Flag |")
         lines.append("|---|---|---|")
         for col, s in report["categorical_stats"].items():
-            flag = "⚠️ high cardinality" if s["high_cardinality_flag"] else ""
+            flags = []
+            if s["high_cardinality_flag"]:
+                flags.append("⚠️ high cardinality")
+            if s.get("mixed_numeric_flag"):
+                flags.append("⚠️ looks numeric but contains non-numeric values — investigate before treating as categorical")
+            flag = "; ".join(flags)
             lines.append(f"| {col} | {s['unique_count']} | {flag} |")
     else:
         lines.append("No categorical columns found.")
@@ -140,7 +151,7 @@ def write_markdown_report(report: dict, dataset_name: str, output_dir: str = "re
         else:
             lines.append("No obviously suspicious column names found.")
         lines.append("")
-        
+
     if "target_balance" in report:
         lines.append("## Target Balance")
         lines.append("| Value | Count | Percentage |")
@@ -148,7 +159,7 @@ def write_markdown_report(report: dict, dataset_name: str, output_dir: str = "re
         for val, info in report["target_balance"].items():
             lines.append(f"| {val} | {info['count']} | {info['pct']}% |")
         lines.append("")
-    
+
     if "target_type" in report and report["target_type"] == "continuous":
         lines.append("## Target Type")
         lines.append(f"Target `{report.get('target_unique_count', '?')}` unique values — "

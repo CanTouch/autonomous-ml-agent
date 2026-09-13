@@ -46,7 +46,7 @@ Generated: 2026-09-13
 |---|---|---|
 | Name | 891 | ⚠️ high cardinality |
 | Sex | 2 |  |
-| Ticket | 681 | ⚠️ high cardinality |
+| Ticket | 681 | ⚠️ high cardinality; ⚠️ looks numeric but contains non-numeric values — investigate before treating as categorical |
 | Cabin | 147 |  |
 | Embarked | 3 |  |
 

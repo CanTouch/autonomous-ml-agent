@@ -36,7 +36,7 @@ Generated: 2026-09-13
 ## Categorical Column Stats
 | Column | Unique Values | Flag |
 |---|---|---|
-| age | 8 | ⚠️ high cardinality |
+| age | 8 | ⚠️ high cardinality; ⚠️ looks numeric but contains non-numeric values — investigate before treating as categorical |
 | category | 4 |  |
 | notes | 6 | ⚠️ high cardinality |
 
