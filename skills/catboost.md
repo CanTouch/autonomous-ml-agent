@@ -38,13 +38,13 @@ $$\text{Encoded Value} = \frac{\text{Option Count} + \text{Prior}}{N_{\text{prev
 *(Note: The core concepts of target leakage and Ordered Target Encoding are established in Part 1 and referenced here).*
 
 ### Target Binning for Continuous Variables
-When predicting a continuous target (regression), CatBoost converts the continuous target into discrete bins (e.g., Bin $0$ and Bin $1$) to enable Ordered Target Encoding on categorical features.
+When predicting a continuous target (regression), CatBoost converts the continuous target into discrete bins (e.g., Bin $0$ and Bin $1$) to enable Ordered Target Encoding on categorical features. The worked example uses two bins. With more than two bins, the source says a slightly different encoding equation is used, [not fully specified in source].
 
 ### Step-by-Step Tree Construction
 
 1. **Randomize Order & Re-encode**:
    - Randomize the row order of the training set before building each tree.
-   - Re-apply Ordered Target Encoding based on the new randomized sequence.
+   - Re-apply Ordered Target Encoding based on the new randomized sequence. Ordered Target Encoding is applied to discrete columns with more than two options (features with only two options are simply replaced with 0s and 1s).
 2. **Initialize Predictions & Residuals**:
    - Initial predictions are set to $0$ for all samples.
    - Initial residuals = $\text{Observed} - \text{Predicted} = \text{Observed} - 0 = \text{Observed}$.
