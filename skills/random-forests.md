@@ -46,6 +46,8 @@ description: Complete guide to Random Forests covering bootstrap aggregating (ba
 
 ## Part 2: Random Forests in R, hands-on implementation (source: statquest-random-forests-in-r.md)
 
+> **NOTE**: The transcript contains only spoken narration. On-screen R code is reconstructed from the narration and standard usage, not copied verbatim. Verify against the author's published script before relying on exact arguments.
+
 *(Note: The core concepts of bootstrap datasets, bagging, random feature subsets, and OOB error are established in Part 1 and referenced here).*
 
 ### Hands-On Workflow in R
