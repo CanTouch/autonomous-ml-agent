@@ -16,7 +16,7 @@ description: Complete guide to AdaBoost (Adaptive Boosting) covering decision st
 | **Tree Size** | Full-sized decision trees (no predetermined fixed depth) | Stumps (single node with 2 leaves evaluating only 1 variable) |
 | **Learner Type** | Strong individual learners | Weak learners combined into a strong ensemble |
 | **Voting Power** | Equal vote per tree | Unequal vote: amount of say depends on individual accuracy |
-| **Tree Creation Order** | Independent and parallelizable | Sequential: each stump depends on errors of preceding stumps |
+| **Tree Creation Order** | Independent (order does not matter) | Sequential (order is important; each stump depends on errors of preceding stumps) |
 
 ---
 
