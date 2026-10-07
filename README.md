@@ -1,3 +1,14 @@
+---
+title: Autonomous ML Agent
+emoji: 🤖
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+sdk_version: 1.65.0
+app_file: app.py
+pinned: false
+---
+
 # ML Agent Project
 
 An agent-driven machine learning pipeline with a knowledge base built from
