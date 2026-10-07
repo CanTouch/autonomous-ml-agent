@@ -30,12 +30,12 @@ COPY . /app/
 # Ensure shell scripts have execute permissions
 RUN chmod +x /app/workflows/*.sh
 
-# Expose default Streamlit port
-EXPOSE 8501
+# Expose default Streamlit port (8501) and Hugging Face Spaces port (7860)
+EXPOSE 8501 7860
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl --fail http://localhost:8501/_stcore/health || exit 1
+    CMD curl --fail http://localhost:${PORT:-8501}/_stcore/health || exit 1
 
 # Launch autonomous ML agent Streamlit application
-CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["sh", "-c", "streamlit run app.py --server.port=${PORT:-8501} --server.address=0.0.0.0"]
