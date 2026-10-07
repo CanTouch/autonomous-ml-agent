@@ -7,14 +7,33 @@ sdk: streamlit
 sdk_version: 1.65.0
 app_file: app.py
 pinned: false
+license: mit
+short_description: Zero-config tabular ML agent for automated EDA, modeling & scoring
 ---
 
-# ML Agent Project
+# 🤖 Autonomous ML Agent
 
-An agent-driven machine learning pipeline with a knowledge base built from
-YouTube video transcripts. Every stage is implemented as a **skill** (a
-plain-markdown instruction file) paired with a **Python helper script**
-— so the agent knows *what* to do and has a verified tool to do it.
+An autonomous, zero-configuration Automated Data Scientist and machine learning pipeline for tabular data. Simply upload any raw CSV or select a benchmark dataset — the agent automatically inspects data quality, cleans anomalies, balances skewed distributions, runs a multi-algorithm tournament, tunes the champion model, and generates interactive reports, feature importance drivers, and downloadable artifacts.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](app.py)
+
+---
+
+### 🌟 Key Capabilities
+- **Zero-Config Autonomy**: Auto-detects target columns, task type (Classification, Regression, or Unsupervised), missing values, and data types without manual intervention.
+- **Robust Data Cleaning**: Automatic median/mode imputation, deduplication, and outlier filtering.
+- **Class Balancing**: Automatically handles severe target imbalance via SMOTE, undersampling, or class weighting.
+- **6-Model Tournament**: Evaluates Random Forest, Gradient Boosting, XGBoost, AdaBoost, Logistic/Linear Regression, and SVM across 10-fold cross-validation.
+- **Hyperparameter Optimization**: Grid search tuning for the tournament champion.
+- **Unsupervised Suite**: Principal Component Analysis (PCA with scree & 2D projection), K-Means (elbow curve & silhouette analysis), and Hierarchical Agglomerative Clustering (dendrograms).
+- **Driver Analysis & Export Tray**:
+  - 📥 **Download Markdown Report**: Comprehensive executive audit and performance metrics.
+  - 💾 **Download Trained Model (`.joblib`)**: Production-ready Scikit-learn pipeline for downstream deployment.
+  - 📊 **Download Predictions (`.csv`)**: Held-out test set predictions with ground truth and probabilities.
+- **🔮 Batch Scoring Hub**: Upload new unlabelled CSVs directly in the UI to generate instant batch predictions.
+
+---
 
 ---
 
@@ -187,3 +206,9 @@ pip install pandas openpyxl scikit-learn matplotlib xgboost imbalanced-learn sci
 - **Config-Driven Cleaning**: Transformations are auditable and reproducible via explicit configuration JSONs.
 - **Auditability**: Every stage writes timestamped markdown logs and metrics.
 - **Production Guardrails**: SVR iterations and parallelism are tuned per model to prevent worker deadlocks on large datasets.
+ 
+---
+
+## License
+
+This project is licensed under the terms of the [MIT License](LICENSE).
