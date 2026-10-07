@@ -10,6 +10,8 @@ import pandas as pd
 from sklearn.model_selection import KFold, cross_validate
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.svm import SVR
+from xgboost import XGBRegressor
 
 
 def load_data(path: str) -> pd.DataFrame:
@@ -39,9 +41,12 @@ def run_model_selection(df: pd.DataFrame, target: str, folds: int = 10):
     cv = KFold(n_splits=folds, shuffle=True, random_state=42)
 
     models = {
-        "Linear Regression": LinearRegression(),
-        "Random Forest": RandomForestRegressor(random_state=42),
-        "Gradient Boosting": GradientBoostingRegressor(random_state=42),
+        "Linear Regression": (LinearRegression(), -1),
+        "Random Forest": (RandomForestRegressor(random_state=42, n_jobs=-1), -1),
+        "Gradient Boosting": (GradientBoostingRegressor(random_state=42), 1),
+        "XGBoost": (XGBRegressor(random_state=42, n_jobs=1), 1),
+        # SVR excluded: O(n²) kernel makes 10-fold CV impractical on large datasets.
+        # SVR is still available in hyperparameter_tuning_regression and evaluation_regression.
     }
 
     scoring = {
@@ -51,8 +56,8 @@ def run_model_selection(df: pd.DataFrame, target: str, folds: int = 10):
     }
     results = {}
 
-    for name, model in models.items():
-        scores = cross_validate(model, X, y, cv=cv, scoring=scoring)
+    for name, (model, n_jobs) in models.items():
+        scores = cross_validate(model, X, y, cv=cv, scoring=scoring, n_jobs=n_jobs)
         results[name] = {
             "r2_mean": scores["test_r2"].mean(),
             "mae_mean": -scores["test_mae"].mean(),

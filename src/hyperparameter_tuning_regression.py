@@ -9,6 +9,8 @@ import pandas as pd
 from sklearn.model_selection import KFold, GridSearchCV
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.svm import SVR
+from xgboost import XGBRegressor
 
 PARAM_GRIDS = {
     "random_forest": {
@@ -31,6 +33,23 @@ PARAM_GRIDS = {
         "model": LinearRegression(),
         "grid": {
             "fit_intercept": [True, False],
+        },
+    },
+    "xgboost": {
+        "model": XGBRegressor(random_state=42),
+        "grid": {
+            "n_estimators": [100, 200],
+            "max_depth": [3, 5, 7],
+            "learning_rate": [0.01, 0.05, 0.1],
+            "gamma": [0, 0.1],
+            "reg_lambda": [0, 1],
+        },
+    },
+    "svm": {
+        "model": SVR(max_iter=1000),
+        "grid": {
+            "C": [0.1, 1, 10],
+            "kernel": ["rbf"],  # linear kernel is prohibitively slow on this machine
         },
     },
 }
@@ -63,12 +82,14 @@ def tune(df: pd.DataFrame, target: str, model_key: str, scoring: str = "neg_mean
     spec = PARAM_GRIDS[model_key]
     cv = KFold(n_splits=folds, shuffle=True, random_state=42)
 
+    # SVR forks workers that are slow to initialise in this environment; run single-threaded.
+    n_jobs = 1 if model_key == "svm" else -1
     grid_search = GridSearchCV(
         estimator=spec["model"],
         param_grid=spec["grid"],
         scoring=scoring,
         cv=cv,
-        n_jobs=-1,
+        n_jobs=n_jobs,
     )
     grid_search.fit(X, y)
 

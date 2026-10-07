@@ -9,6 +9,8 @@ import pandas as pd
 from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.svm import SVC
+from xgboost import XGBClassifier
 
 
 def load_data(path: str) -> pd.DataFrame:
@@ -45,6 +47,8 @@ def run_model_selection(df: pd.DataFrame, target: str, folds: int = 10):
         "Logistic Regression": LogisticRegression(max_iter=1000),
         "Random Forest": RandomForestClassifier(random_state=42),
         "Gradient Boosting": GradientBoostingClassifier(random_state=42),
+        "XGBoost": XGBClassifier(random_state=42, eval_metric="logloss"),
+        "SVM": SVC(random_state=42),
     }
 
     scoring = ["accuracy", "precision", "recall", "f1"]

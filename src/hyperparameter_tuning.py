@@ -9,6 +9,8 @@ import pandas as pd
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.svm import SVC
+from xgboost import XGBClassifier
 
 PARAM_GRIDS = {
     "random_forest": {
@@ -33,6 +35,24 @@ PARAM_GRIDS = {
         "grid": {
             "C": [0.01, 0.1, 1, 10],
             "penalty": ["l2"],
+        },
+    },
+    "xgboost": {
+        "model": XGBClassifier(random_state=42, eval_metric="logloss"),
+        "grid": {
+            "n_estimators": [100, 200],
+            "max_depth": [3, 5, 7],
+            "learning_rate": [0.01, 0.1, 0.2],
+            "gamma": [0, 0.1],
+            "reg_lambda": [0, 1],
+        },
+    },
+    "svm": {
+        "model": SVC(random_state=42),
+        "grid": {
+            "C": [0.1, 1, 10],
+            "kernel": ["rbf"],  # linear kernel is prohibitively slow on this machine
+            "gamma": ["scale", "auto"],
         },
     },
 }
@@ -65,12 +85,14 @@ def tune(df: pd.DataFrame, target: str, model_key: str, scoring: str = "f1", fol
     spec = PARAM_GRIDS[model_key]
     cv = StratifiedKFold(n_splits=folds, shuffle=True, random_state=42)
 
+    # SVM forks workers that are slow to initialise in this environment; run single-threaded.
+    n_jobs = 1 if model_key == "svm" else -1
     grid_search = GridSearchCV(
         estimator=spec["model"],
         param_grid=spec["grid"],
         scoring=scoring,
         cv=cv,
-        n_jobs=-1,
+        n_jobs=n_jobs,
     )
     grid_search.fit(X, y)
 

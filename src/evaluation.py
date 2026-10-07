@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.svm import SVC
+from xgboost import XGBClassifier
 from sklearn.metrics import (
     confusion_matrix, roc_curve, roc_auc_score,
     precision_score, recall_score, f1_score, accuracy_score
@@ -23,6 +25,8 @@ MODEL_CLASSES = {
     "random_forest": RandomForestClassifier,
     "gradient_boosting": GradientBoostingClassifier,
     "logistic_regression": LogisticRegression,
+    "xgboost": XGBClassifier,
+    "svm": SVC,
 }
 
 
@@ -56,12 +60,20 @@ def evaluate(df: pd.DataFrame, target: str, model_key: str, params: dict, test_s
 
     model_cls = MODEL_CLASSES[model_key]
     clean_params = {k: v for k, v in params.items() if v is not None}
-    model = model_cls(random_state=42, **clean_params) if model_key != "logistic_regression" else model_cls(max_iter=1000, **clean_params)
+    if model_key == "logistic_regression":
+        model = model_cls(max_iter=1000, **clean_params)
+    elif model_key == "xgboost":
+        model = model_cls(random_state=42, eval_metric="logloss", **clean_params)
+    else:
+        model = model_cls(random_state=42, **clean_params)
 
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    y_proba = model.predict_proba(X_test)[:, 1]
+    if hasattr(model, "predict_proba"):
+        y_proba = model.predict_proba(X_test)[:, 1]
+    else:
+        y_proba = model.decision_function(X_test)
 
     cm = confusion_matrix(y_test, y_pred)
     tn, fp, fn, tp = cm.ravel()

@@ -117,14 +117,19 @@ echo ""
 # ---- Stage 6: Evaluation -----------------------------------------------------
 echo "[6/6] Final Evaluation..."
 # Read best params from the tuning report
-TUNING_REPORT="reports/tuning_${MODEL}_${DATASET_STEM}_${DATE}.md"
+if [[ "$TASK" == "regression" ]]; then
+  TUNING_REPORT="reports/tuning_regression_${MODEL}_${DATASET_STEM}_${DATE}.md"
+else
+  TUNING_REPORT="reports/tuning_${MODEL}_${DATASET_STEM}_${DATE}.md"
+fi
 BEST_PARAMS=$(grep "Best parameters" "$TUNING_REPORT" | sed "s/.*\`\(.*\)\`.*/\1/")
 if [[ "$TASK" == "regression" ]]; then
   $PYTHON src/evaluation_regression.py "$FEATURES" --target "$TARGET" --model "$MODEL" --params "$BEST_PARAMS"
+  echo "      → reports/evaluation_regression_${MODEL}_${DATASET_STEM}_${DATE}.md"
 else
   $PYTHON src/evaluation.py "$FEATURES" --target "$TARGET" --model "$MODEL" --params "$BEST_PARAMS"
+  echo "      → reports/evaluation_${MODEL}_${DATASET_STEM}_${DATE}.md"
 fi
-echo "      → reports/evaluation_${MODEL}_${DATASET_STEM}_${DATE}.md"
 echo ""
 
 # ---- Final Report ------------------------------------------------------------

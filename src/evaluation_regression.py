@@ -14,12 +14,16 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.svm import SVR
+from xgboost import XGBRegressor
 from sklearn.metrics import r2_score, mean_absolute_error, root_mean_squared_error
 
 MODEL_CLASSES = {
     "random_forest": RandomForestRegressor,
     "gradient_boosting": GradientBoostingRegressor,
     "linear_regression": LinearRegression,
+    "xgboost": XGBRegressor,
+    "svm": SVR,
 }
 
 
@@ -53,7 +57,12 @@ def evaluate(df: pd.DataFrame, target: str, model_key: str, params: dict, test_s
 
     model_cls = MODEL_CLASSES[model_key]
     clean_params = {k: v for k, v in params.items() if v is not None}
-    model = model_cls(random_state=42, **clean_params) if model_key != "linear_regression" else model_cls(**clean_params)
+    if model_key == "svm":
+        clean_params.setdefault("max_iter", 2000)
+    if model_key in ("linear_regression", "svm"):
+        model = model_cls(**clean_params)
+    else:
+        model = model_cls(random_state=42, **clean_params)
 
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
