@@ -13,6 +13,11 @@ STAGE_ORDER = [
     ("profile", "Data Profile"),
     ("cleaning_log", "Data Cleaning"),
     ("feature_engineering_log", "Feature Engineering"),
+    ("feature_selection", "Feature Selection"),
+    ("class_balancing", "Class Balancing"),
+    ("pca", "Principal Component Analysis"),
+    ("kmeans", "K-Means Clustering"),
+    ("hierarchical", "Hierarchical Clustering"),
     ("model_selection_regression", "Model Selection"),
     ("model_selection", "Model Selection"),
     ("tuning_regression", "Hyperparameter Tuning"),
@@ -46,7 +51,15 @@ def find_stage_files(dataset_name: str, reports_dir: str = "reports"):
 
 def find_plots(dataset_name: str, reports_dir: str = "reports"):
     plots = []
-    for pattern in [f"roc_curve_*_{dataset_name}_*.png", f"residuals_*_{dataset_name}_*.png"]:
+    plot_patterns = [
+        f"roc_curve_*_{dataset_name}_*.png",
+        f"residuals_*_{dataset_name}_*.png",
+        f"pca_scree_{dataset_name}_*.png",
+        f"pca_2d_{dataset_name}_*.png",
+        f"kmeans_elbow_{dataset_name}_*.png",
+        f"hierarchical_dendrogram_{dataset_name}_*.png",
+    ]
+    for pattern in plot_patterns:
         matches = sorted(glob.glob(f"{reports_dir}/{pattern}"))
         plots.extend(matches)
     return plots

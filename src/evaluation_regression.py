@@ -5,6 +5,7 @@ Usage: ./.venv/bin/python src/evaluation_regression.py <path> --target Price --m
 """
 import argparse
 import json
+import ast
 from pathlib import Path
 from datetime import date
 import pandas as pd
@@ -136,7 +137,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     df = load_data(args.dataset_path)
-    params = json.loads(args.params)
+    try:
+        params = json.loads(args.params)
+    except Exception:
+        params = ast.literal_eval(args.params)
 
     metrics, y_test, y_pred, residuals = evaluate(df, args.target, args.model, params, args.test_size)
 
