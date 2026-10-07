@@ -3,4 +3,11 @@ __pycache__/
 *.pyc
 .cache/
 .pytest_cache/
+reports/*.joblib
+reports/*.csv
+reports/*_2026-*.md
+reports/*_2026-*.png
+reports/feature_importance_*.png
+data/processed/*.csv
+*_config.json
 
