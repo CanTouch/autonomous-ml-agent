@@ -188,6 +188,32 @@ else
 fi
 echo ""
 
+# Auto-resolve best model from the tournament if MODEL is "auto"
+if [[ "$MODEL" == "auto" ]]; then
+  echo "  [Auto-Model] Resolving tournament champion from Model Selection..."
+  if [[ "$TASK" == "regression" ]]; then
+    MODEL=$($PYTHON -c '
+import sys
+lines = open("reports/model_selection_regression_'"${DATASET_STEM}_${DATE}"'.md").readlines()
+table = [l.strip().split("|")[1:-1] for l in lines if l.startswith("|") and not l.startswith("| Model") and not l.startswith("|---")]
+mapping = {"Linear Regression": "linear_regression", "Random Forest": "random_forest", "Gradient Boosting": "gradient_boosting", "AdaBoost": "adaboost", "XGBoost": "xgboost"}
+best = max(table, key=lambda r: float(r[1].strip()))[0].strip()
+print(mapping.get(best, "xgboost"))
+')
+  else
+    MODEL=$($PYTHON -c '
+import sys
+lines = open("reports/model_selection_'"${DATASET_STEM}_${DATE}"'.md").readlines()
+table = [l.strip().split("|")[1:-1] for l in lines if l.startswith("|") and not l.startswith("| Model") and not l.startswith("|---")]
+mapping = {"Logistic Regression": "logistic_regression", "Random Forest": "random_forest", "Gradient Boosting": "gradient_boosting", "AdaBoost": "adaboost", "XGBoost": "xgboost", "SVM": "svm"}
+best = max(table, key=lambda r: float(r[6].strip()))[0].strip()
+print(mapping.get(best, "xgboost"))
+')
+  fi
+  echo "  [Auto-Model] Tournament Champion: $MODEL"
+  echo ""
+fi
+
 # ---- Stage 5: Hyperparameter Tuning -----------------------------------------
 echo "[5/6] Hyperparameter Tuning ($MODEL)..."
 SCORING_ARG=""

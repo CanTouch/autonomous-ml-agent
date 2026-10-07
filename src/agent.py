@@ -275,57 +275,130 @@ def run_interactive_wizard():
         print(f"\n❌ Pipeline exited with status code {returncode}.")
 
 
+def print_executive_summary(dataset_stem: str):
+    """Parses and prints a concise Data Scientist executive summary from the final report."""
+    today = Path("reports")
+    reports = list(today.glob(f"FINAL_REPORT_{dataset_stem}_*.md"))
+    if not reports:
+        return
+    latest_report = sorted(reports)[-1]
+    content = latest_report.read_text()
+
+    print("\n" + "=" * 60)
+    print(" 📊 DATA SCIENTIST EXECUTIVE SUMMARY")
+    print(f" Dataset : {dataset_stem}")
+    print(f" Master Report : {latest_report}")
+    print("=" * 60)
+
+    # Extract test metrics if present
+    if "## Test Set Metrics" in content:
+        metrics_block = content.split("## Test Set Metrics")[1].split("\n\n")[0]
+        print("\n📈 Held-Out Test Evaluation:")
+        for line in metrics_block.strip().split("\n"):
+            if line.startswith("- "):
+                print(f"   {line[2:]}")
+
+    # Extract tuning winner if present
+    if "**Best parameters**:" in content:
+        print("\n⚙️ Champion Model & Optimal Parameters:")
+        for line in content.split("\n"):
+            if "**Best parameters**:" in line or "**Best score**:" in line:
+                print(f"   {line.replace('**', '')}")
+
+    # Extract generated plots
+    plots = [line.strip("- ") for line in content.split("\n") if line.strip().endswith(".png")]
+    if plots:
+        print("\n🖼️ Visualizations & Artifacts:")
+        for p in plots:
+            print(f"   • {p}")
+
+    print("\n" + "=" * 60 + "\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description="ML Agent: Autonomous Tabular ML Assistant")
+    parser.add_argument("dataset_pos", nargs="?", default=None, metavar="DATASET", help="Path to input raw CSV dataset")
     parser.add_argument("--dataset", type=str, help="Path to input dataset in data/raw/")
     parser.add_argument("--target", type=str, help="Target column name")
     parser.add_argument("--task", choices=["classification", "regression", "unsupervised", "auto"], default="auto")
-    parser.add_argument("--model", default="xgboost", help="Model to evaluate (xgboost, random_forest, svm, adaboost, etc.)")
+    parser.add_argument("--model", default="auto", help="Model to evaluate (auto, xgboost, random_forest, svm, adaboost, etc.)")
     parser.add_argument("--cleaning-config", type=str, help="Path to cleaning config JSON")
     parser.add_argument("--feature-config", type=str, help="Path to feature engineering config JSON")
-    parser.add_argument("--feature-selection", action="store_true", help="Apply 3-stage feature selection filter")
+    parser.add_argument("--feature-selection", action="store_true", default=None, help="Apply 3-stage feature selection filter")
     parser.add_argument("--class-balancing", choices=["undersample", "smote", "class_weight"], help="Class balancing strategy")
     parser.add_argument("--interactive", action="store_true", help="Launch interactive wizard")
 
     args = parser.parse_args()
 
+    dataset_input = args.dataset or args.dataset_pos
+
     # If no dataset is specified or --interactive is passed, launch the wizard
-    if args.interactive or not args.dataset:
+    if args.interactive or not dataset_input:
         run_interactive_wizard()
         return
 
     agent = MLAgent()
-    dataset_path = Path(args.dataset)
+    dataset_path = Path(dataset_input)
     if not dataset_path.exists():
         print(f"Error: dataset file '{dataset_path}' not found.")
         sys.exit(1)
 
     df = pd.read_csv(dataset_path)
-    target = args.target
+    info = agent.inspect_dataset(dataset_path)
 
+    # 1. Target resolution
+    target = args.target
+    if not target:
+        if info["candidate_targets"]:
+            target = info["candidate_targets"][0]
+            print(f"🤖 [Auto-Target] Detected primary target column: '{target}'")
+        else:
+            target = None
+            print("🤖 [Auto-Target] No explicit target detected; running unsupervised analysis.")
+
+    # 2. Task resolution
     task = args.task
     if task == "auto":
         task = agent.infer_task_type(df, target)
-        print(f"Auto-detected task type: {task}")
+        print(f"🤖 [Auto-Task] Inferred task type: {task.upper()}")
 
+    # 3. Preprocessing configs (auto-synthesizes if not already present)
     stem = dataset_path.stem
     clean_cfg = Path(args.cleaning_config) if args.cleaning_config else Path(f"{stem}_cleaning_config.json")
     feat_cfg = Path(args.feature_config) if args.feature_config else Path(f"{stem}_feature_engineering_config.json")
 
     if not clean_cfg.exists() or not feat_cfg.exists():
-        print("Auto-generating dataset cleaning and feature configs...")
+        print("🤖 [Auto-Config] Synthesizing cleaning & feature engineering strategies...")
         clean_cfg, feat_cfg = agent.auto_generate_configs(df, target, stem)
+
+    # 4. Automated Feature Selection (default True in autonomous mode)
+    do_feature_selection = True if args.feature_selection is None else args.feature_selection
+
+    # 5. Automated Class Balancing (if classification and imbalance > 60%)
+    class_balancing = args.class_balancing
+    if task == "classification" and target and class_balancing is None:
+        y_counts = df[target].value_counts(normalize=True)
+        if len(y_counts) > 0 and y_counts.iloc[0] > 0.60:
+            class_balancing = "undersample"
+            print(f"🤖 [Auto-Balance] Class imbalance detected ({y_counts.iloc[0]*100:.1f}% majority). Applying undersampling.")
+
+    # 6. Model selection (default "auto" runs tournament and tunes the champion)
+    model = args.model
 
     code = agent.run_pipeline(
         dataset_path=dataset_path,
         target=target,
         task=task,
-        model=args.model,
+        model=model,
         cleaning_config=clean_cfg,
         feature_config=feat_cfg,
-        feature_selection=args.feature_selection,
-        class_balancing=args.class_balancing,
+        feature_selection=do_feature_selection,
+        class_balancing=class_balancing,
     )
+
+    if code == 0:
+        print_executive_summary(stem)
+
     sys.exit(code)
 
 
