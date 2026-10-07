@@ -8,7 +8,7 @@ from datetime import date
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
 from sklearn.svm import SVC
 from xgboost import XGBClassifier
 
@@ -35,6 +35,13 @@ PARAM_GRIDS = {
         "grid": {
             "C": [0.01, 0.1, 1, 10],
             "penalty": ["l2"],
+        },
+    },
+    "adaboost": {
+        "model": AdaBoostClassifier(random_state=42),
+        "grid": {
+            "n_estimators": [50, 100, 200],
+            "learning_rate": [0.01, 0.1, 1.0],
         },
     },
     "xgboost": {
@@ -140,5 +147,11 @@ if __name__ == "__main__":
     df = load_data(args.dataset_path)
     best_params, best_score, top5 = tune(df, args.target, args.model, args.scoring, args.folds)
 
-    dataset_name = Path(args.dataset_path).stem.replace("_features", "")
+    dataset_name = (
+        Path(args.dataset_path).stem
+        .replace("_features", "")
+        .replace("_selected", "")
+        .replace("_balanced", "")
+        .replace("_cleaned", "")
+    )
     write_report(args.model, best_params, best_score, top5, dataset_name, args.scoring)

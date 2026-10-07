@@ -5,6 +5,9 @@
 
 set -euo pipefail
 
+export MPLCONFIGDIR="${PWD}/.cache/matplotlib"
+mkdir -p "$MPLCONFIGDIR"
+
 PYTHON="./.venv/bin/python"
 DATE=$(date +%F)
 
@@ -83,6 +86,11 @@ for MODEL in random_forest xgboost svm; do
   echo "  ✓ PASS: Classification evaluation for $MODEL completed"
 done
 
+# Evaluate AdaBoost on Titanic
+$PYTHON src/evaluation.py data/processed/titanic_features.csv --target Survived --model adaboost --params '{"n_estimators": 50, "learning_rate": 0.1}'
+test -f "reports/evaluation_adaboost_titanic_${DATE}.md"
+echo "  ✓ PASS: Classification evaluation for adaboost completed"
+
 # Test 10: Supervised Regression Evaluation (Random Forest, XGBoost, SVM)
 echo "[TEST 10] Regression Evaluation..."
 
@@ -94,6 +102,11 @@ for MODEL in random_forest xgboost svm; do
   test -f "reports/residuals_${MODEL}_melbourne_housing_${DATE}.png"
   echo "  ✓ PASS: Regression evaluation for $MODEL completed"
 done
+
+# Evaluate AdaBoost on Melbourne Housing
+$PYTHON src/evaluation_regression.py data/processed/melbourne_housing_features.csv --target Price --model adaboost --params '{"n_estimators": 50, "learning_rate": 0.1}'
+test -f "reports/evaluation_regression_adaboost_melbourne_housing_${DATE}.md"
+echo "  ✓ PASS: Regression evaluation for adaboost completed"
 
 # Test 11: Combined Final Report Generation
 echo "[TEST 11] Report Generation..."

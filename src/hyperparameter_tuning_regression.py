@@ -8,7 +8,7 @@ from datetime import date
 import pandas as pd
 from sklearn.model_selection import KFold, GridSearchCV
 from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor
 from sklearn.svm import SVR
 from xgboost import XGBRegressor
 
@@ -33,6 +33,14 @@ PARAM_GRIDS = {
         "model": LinearRegression(),
         "grid": {
             "fit_intercept": [True, False],
+        },
+    },
+    "adaboost": {
+        "model": AdaBoostRegressor(random_state=42),
+        "grid": {
+            "n_estimators": [50, 100, 200],
+            "learning_rate": [0.01, 0.1, 1.0],
+            "loss": ["linear", "square", "exponential"],
         },
     },
     "xgboost": {
@@ -137,5 +145,11 @@ if __name__ == "__main__":
     df = load_data(args.dataset_path)
     best_params, best_score, top5 = tune(df, args.target, args.model, args.scoring, args.folds)
 
-    dataset_name = Path(args.dataset_path).stem.replace("_features", "")
+    dataset_name = (
+        Path(args.dataset_path).stem
+        .replace("_features", "")
+        .replace("_selected", "")
+        .replace("_balanced", "")
+        .replace("_cleaned", "")
+    )
     write_report(args.model, best_params, best_score, top5, dataset_name, args.scoring)

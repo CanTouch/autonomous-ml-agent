@@ -36,6 +36,9 @@
 
 set -euo pipefail
 
+export MPLCONFIGDIR="${PWD}/.cache/matplotlib"
+mkdir -p "$MPLCONFIGDIR"
+
 PYTHON="./.venv/bin/python"
 
 # ---- Defaults ----------------------------------------------------------------
@@ -207,6 +210,9 @@ if [[ "$TASK" == "regression" ]]; then
   TUNING_REPORT="reports/tuning_regression_${MODEL}_${DATASET_STEM}_${DATE}.md"
 else
   TUNING_REPORT="reports/tuning_${MODEL}_${DATASET_STEM}_${DATE}.md"
+fi
+if [[ ! -f "$TUNING_REPORT" ]]; then
+  TUNING_REPORT=$(ls -t reports/tuning*${MODEL}*${DATASET_STEM}*${DATE}*.md 2>/dev/null | head -n 1 || echo "")
 fi
 BEST_PARAMS=$(grep "Best parameters" "$TUNING_REPORT" | sed "s/.*\`\(.*\)\`.*/\1/")
 if [[ "$TASK" == "regression" ]]; then

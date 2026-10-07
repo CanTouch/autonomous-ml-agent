@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import KFold, cross_validate
 from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor
 from sklearn.svm import SVR
 from xgboost import XGBRegressor
 
@@ -44,6 +44,7 @@ def run_model_selection(df: pd.DataFrame, target: str, folds: int = 10):
         "Linear Regression": (LinearRegression(), -1),
         "Random Forest": (RandomForestRegressor(random_state=42, n_jobs=-1), -1),
         "Gradient Boosting": (GradientBoostingRegressor(random_state=42), 1),
+        "AdaBoost": (AdaBoostRegressor(random_state=42), -1),
         "XGBoost": (XGBRegressor(random_state=42, n_jobs=1), 1),
         # SVR excluded: O(n²) kernel makes 10-fold CV impractical on large datasets.
         # SVR is still available in hyperparameter_tuning_regression and evaluation_regression.
@@ -98,5 +99,11 @@ if __name__ == "__main__":
     df = load_data(args.dataset_path)
     results = run_model_selection(df, args.target, args.folds)
 
-    dataset_name = Path(args.dataset_path).stem.replace("_features", "")
+    dataset_name = (
+        Path(args.dataset_path).stem
+        .replace("_features", "")
+        .replace("_selected", "")
+        .replace("_balanced", "")
+        .replace("_cleaned", "")
+    )
     write_report(results, dataset_name, args.target)

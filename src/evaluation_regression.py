@@ -14,7 +14,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor
 from sklearn.svm import SVR
 from xgboost import XGBRegressor
 from sklearn.metrics import r2_score, mean_absolute_error, root_mean_squared_error
@@ -23,6 +23,7 @@ MODEL_CLASSES = {
     "random_forest": RandomForestRegressor,
     "gradient_boosting": GradientBoostingRegressor,
     "linear_regression": LinearRegression,
+    "adaboost": AdaBoostRegressor,
     "xgboost": XGBRegressor,
     "svm": SVR,
 }
@@ -144,6 +145,12 @@ if __name__ == "__main__":
 
     metrics, y_test, y_pred, residuals = evaluate(df, args.target, args.model, params, args.test_size)
 
-    dataset_name = Path(args.dataset_path).stem.replace("_features", "")
+    dataset_name = (
+        Path(args.dataset_path).stem
+        .replace("_features", "")
+        .replace("_selected", "")
+        .replace("_balanced", "")
+        .replace("_cleaned", "")
+    )
     write_residual_plot(y_test, y_pred, residuals, args.model, dataset_name)
     write_report(metrics, args.model, dataset_name)

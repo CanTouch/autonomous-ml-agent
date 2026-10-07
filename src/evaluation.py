@@ -14,7 +14,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
 from sklearn.svm import SVC
 from xgboost import XGBClassifier
 from sklearn.metrics import (
@@ -26,6 +26,7 @@ MODEL_CLASSES = {
     "random_forest": RandomForestClassifier,
     "gradient_boosting": GradientBoostingClassifier,
     "logistic_regression": LogisticRegression,
+    "adaboost": AdaBoostClassifier,
     "xgboost": XGBClassifier,
     "svm": SVC,
 }
@@ -160,6 +161,12 @@ if __name__ == "__main__":
 
     result = evaluate(df, args.target, args.model, params, args.test_size)
 
-    dataset_name = Path(args.dataset_path).stem.replace("_features", "")
+    dataset_name = (
+        Path(args.dataset_path).stem
+        .replace("_features", "")
+        .replace("_selected", "")
+        .replace("_balanced", "")
+        .replace("_cleaned", "")
+    )
     write_roc_plot(result["fpr"], result["tpr"], result["metrics"]["auc"], args.model, dataset_name)
     write_report(result, args.model, dataset_name)

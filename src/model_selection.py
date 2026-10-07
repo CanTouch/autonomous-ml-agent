@@ -8,7 +8,7 @@ from datetime import date
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
 from sklearn.svm import SVC
 from xgboost import XGBClassifier
 
@@ -47,6 +47,7 @@ def run_model_selection(df: pd.DataFrame, target: str, folds: int = 10):
         "Logistic Regression": LogisticRegression(max_iter=1000),
         "Random Forest": RandomForestClassifier(random_state=42),
         "Gradient Boosting": GradientBoostingClassifier(random_state=42),
+        "AdaBoost": AdaBoostClassifier(random_state=42),
         "XGBoost": XGBClassifier(random_state=42, eval_metric="logloss"),
         "SVM": SVC(random_state=42),
     }
@@ -101,5 +102,11 @@ if __name__ == "__main__":
     df = load_data(args.dataset_path)
     results = run_model_selection(df, args.target, args.folds)
 
-    dataset_name = Path(args.dataset_path).stem.replace("_features", "")
+    dataset_name = (
+        Path(args.dataset_path).stem
+        .replace("_features", "")
+        .replace("_selected", "")
+        .replace("_balanced", "")
+        .replace("_cleaned", "")
+    )
     write_report(results, dataset_name)

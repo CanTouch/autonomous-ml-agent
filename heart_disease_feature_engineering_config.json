@@ -1,0 +1,4 @@
+{
+  "one_hot_encode": ["cp", "restecg", "slope", "thal"],
+  "target_column": "target"
+}

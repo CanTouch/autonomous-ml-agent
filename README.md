@@ -3,7 +3,7 @@
 An agent-driven machine learning pipeline with a knowledge base built from
 YouTube video transcripts. Every stage is implemented as a **skill** (a
 plain-markdown instruction file) paired with a **Python helper script**
-— so the agent knows *what* to do and has a tool to do it.
+— so the agent knows *what* to do and has a verified tool to do it.
 
 ---
 
@@ -13,13 +13,14 @@ plain-markdown instruction file) paired with a **Python helper script**
 ml-agent-project/
 ├── data/
 │   ├── raw/                  # Original, unmodified datasets
-│   ├── processed/            # Cleaned and feature-engineered datasets
+│   ├── processed/            # Cleaned, feature-engineered, and transformed datasets
 │   ├── transcripts/          # Raw YouTube transcripts (markdown)
 │   └── knowledge/            # Extracted methodology notes
-├── reports/                  # All output reports and plots
-├── skills/                   # Agent skill definitions (markdown)
-├── src/                      # Python helper scripts
-├── workflows/                # End-to-end pipeline orchestration
+├── reports/                  # All output markdown reports and PNG plots
+├── skills/                   # Agent skill definitions (26 markdown specifications)
+├── src/                      # Production Python helper scripts
+├── tests/                    # Unit tests and end-to-end integration test suite
+├── workflows/                # End-to-end pipeline orchestrator (run_pipeline.sh)
 ├── urls.txt                  # YouTube URLs for batch ingestion
 ├── failed_ingests.log        # URLs that could not be ingested
 └── .venv/                    # Python virtual environment
@@ -27,142 +28,131 @@ ml-agent-project/
 
 ---
 
-## Skills
+## Skills Registry (26 Skills)
 
-| Skill | File | Description |
+### 1. Data Preparation & Preprocessing
+| Skill | File | Helper Script | Description |
+|---|---|---|---|
+| Ingest YouTube | `skills/ingest-youtube.md` | `src/ingest_youtube.py` | Ingest transcript + metadata from YouTube videos |
+| Extract Methodology | `skills/extract-methodology.md` | — | Extract structured knowledge notes with strict source fidelity |
+| Data Profiling | `skills/data-profiling.md` | `src/data_profiling.py` | Profile raw datasets — shape, types, missingness, cardinality, outliers |
+| Data Cleaning | `skills/data-cleaning.md` | `src/data_cleaning.py` | Execute config-driven cleaning (imputation, dropping, flags) |
+| Feature Engineering | `skills/feature-engineering.md` | `src/feature_engineering.py` | Encode categoricals, create binary flags, frequency encoding |
+| Feature Selection | `skills/feature-selection.md` | `src/feature_selection.py` | Variance, collinearity, and permutation importance filtering |
+| Class Balancing | `skills/class-balancing.md` | `src/class_balancing.py` | Address class imbalance via SMOTE, undersampling, or class weights |
+
+### 2. Supervised Learning & Evaluation
+| Skill | File | Helper Script | Description |
+|---|---|---|---|
+| Model Selection | `skills/model-selection.md` | `src/model_selection.py` | Stratified k-fold CV across classifiers (RF, GB, AdaBoost, XGBoost, SVM, LR) |
+| Model Selection (Regression) | `skills/model-selection-regression.md` | `src/model_selection_regression.py` | K-fold CV across regressors (RF, GB, AdaBoost, XGBoost, LR) |
+| Hyperparameter Tuning | `skills/hyperparameter-tuning.md` | `src/hyperparameter_tuning.py` | Grid search with cross-validation for classifiers |
+| Hyperparameter Tuning (Regression) | `skills/hyperparameter-tuning-regression.md` | `src/hyperparameter_tuning_regression.py` | Grid search with cross-validation for regressors |
+| Evaluation | `skills/evaluation.md` | `src/evaluation.py` | Held-out test evaluation (confusion matrix, ROC curves, AUC, F1) |
+| Evaluation (Regression) | `skills/evaluation-regression.md` | `src/evaluation_regression.py` | Held-out test evaluation (MAE, RMSE, R², residual plots) |
+| Report Generation | `skills/report-generation.md` | `src/report_generation.py` | Combines up to 11 pipeline stage reports and all plots into a master report |
+
+### 3. Unsupervised Learning
+| Skill | File | Helper Script | Description |
+|---|---|---|---|
+| PCA | `skills/pca.md` | `src/pca_analysis.py` | SVD dimensionality reduction, scree plots, 2D projections, loading scores |
+| K-Means Clustering | `skills/k-means-clustering.md` | `src/clustering_kmeans.py` | K-means clustering with automated elbow curve scan and silhouette scores |
+| Hierarchical Clustering | `skills/hierarchical-clustering.md` | `src/clustering_hierarchical.py` | Agglomerative clustering (Euclidean & Manhattan) with dendrogram generation |
+
+### 4. Machine Learning Algorithm Methodology
+| Skill | File | Core Techniques Extracted |
 |---|---|---|
-| Ingest YouTube | `skills/ingest-youtube.md` | Download transcript + metadata from a YouTube video |
-| Extract Methodology | `skills/extract-methodology.md` | Extract structured knowledge notes from a transcript |
-| Data Profiling | `skills/data-profiling.md` | Profile a raw dataset — shape, dtypes, missing values, cardinality, outlier flags |
-| Data Cleaning | `skills/data-cleaning.md` | Propose and execute a cleaning plan (imputation, drops, flags) |
-| Feature Engineering | `skills/feature-engineering.md` | Encode categoricals, create binary flags, apply frequency encoding |
-| Model Selection | `skills/model-selection.md` | Compare classifiers via k-fold CV |
-| Model Selection (Regression) | `skills/model-selection-regression.md` | Compare regressors via k-fold CV |
-| Hyperparameter Tuning | `skills/hyperparameter-tuning.md` | Tune classifier hyperparameters via RandomizedSearchCV |
-| Hyperparameter Tuning (Regression) | `skills/hyperparameter-tuning-regression.md` | Tune regressor hyperparameters via RandomizedSearchCV |
-| Evaluation | `skills/evaluation.md` | Final held-out test evaluation for classifiers (confusion matrix, ROC, AUC) |
-| Evaluation (Regression) | `skills/evaluation-regression.md` | Final held-out test evaluation for regressors (MAE, RMSE, R², residuals plot) |
-| Report Generation | `skills/report-generation.md` | Combine all stage reports into a single final report |
+| Decision Trees | `skills/decision-trees.md` | Gini impurity, numeric thresholds, missing data surrogate splits |
+| Random Forests | `skills/random-forests.md` | Bootstrapping, feature sub-sampling, out-of-bag (OOB) error estimation |
+| Gradient Boost | `skills/gradient-boost.md` | Pseudo-residuals, shrinkage, log-odds transformation, Taylor expansion |
+| AdaBoost | `skills/adaboost.md` | Sample weight updates, amount-of-say calculation, decision stumps |
+| CatBoost | `skills/catboost.md` | Ordered target encoding, symmetric oblivious trees, cosine similarity |
+| XGBoost | `skills/xgboost.md` | Similarity scores, gain criteria, cover values, regularization |
+| SVM | `skills/svm.md` | Maximal margin hyperplanes, soft margin slack, polynomial and RBF kernels |
 
 ---
 
-## Full Pipeline
+## Available Datasets (`data/raw/`)
 
-### Option A — Automated (single command)
+| Dataset | File | Rows | Cols | Task / Benchmark Purpose | Target |
+|---|---|---|---|---|---|
+| **Titanic** | `data/raw/titanic.csv` | 891 | 12 | Binary classification with mixed data types and missing values | `Survived` |
+| **Melbourne Housing** | `data/raw/melbourne_housing.csv` | 13,580 | 21 | Continuous regression with categorical & geographical features | `Price` |
+| **Heart Disease (Cleveland)** | `data/raw/heart_disease.csv` | 303 | 14 | Clinical classification (from StatQuest Random Forest tutorial) | `target` |
+| **Churn Modelling** | `data/raw/churn_modelling.csv` | 10,000 | 14 | Customer churn prediction (from Krish Naik XGBoost tutorial) | `Exited` |
+| **California Housing** | `data/raw/california_housing.csv` | 20,640 | 9 | Continuous geographic regression benchmark | `MedHouseVal` |
+| **Breast Cancer** | `data/raw/breast_cancer.csv` | 569 | 31 | High-dimensional classification, PCA dimensionality reduction | `target` |
+| **Wine** | `data/raw/wine.csv` | 178 | 14 | Multi-class classification & unsupervised clustering | `target` |
+| **Stress Test** | `data/raw/stress_test.csv` | 10 | 6 | Edge-case validation for mixed numeric types & nulls | `target` |
 
+---
+
+## Automated Pipeline (`workflows/run_pipeline.sh`)
+
+### Classification Pipeline (Titanic)
 ```bash
-# Classification example (Titanic)
 ./workflows/run_pipeline.sh \
   --dataset data/raw/titanic.csv \
   --target Survived \
   --cleaning-config data_cleaning_config.json \
   --feature-config feature_engineering_config.json \
-  --model random_forest \
-  --task classification
+  --model xgboost \
+  --task classification \
+  --feature-selection \
+  --class-balancing undersample
+```
 
-# Regression example (Melbourne housing)
+### Regression Pipeline (Melbourne Housing)
+```bash
 ./workflows/run_pipeline.sh \
   --dataset data/raw/melbourne_housing.csv \
   --target Price \
   --cleaning-config melbourne_cleaning_config.json \
   --feature-config melbourne_feature_engineering_config.json \
-  --model random_forest \
+  --model xgboost \
   --task regression
 ```
 
-### Option B — Stage by stage
-
+### Unsupervised Pipeline (PCA + K-Means + Hierarchical)
 ```bash
-PYTHON="./.venv/bin/python"
-
-# 1. Profile
-$PYTHON src/data_profiling.py data/raw/titanic.csv --target Survived
-
-# 2. Clean  (edit data_cleaning_config.json first based on profile findings)
-$PYTHON src/data_cleaning.py data/raw/titanic.csv --config data_cleaning_config.json
-
-# 3. Feature engineer  (edit feature_engineering_config.json based on cleaning output)
-$PYTHON src/feature_engineering.py data/processed/titanic_cleaned.csv --config feature_engineering_config.json
-
-# 4. Model selection
-$PYTHON src/model_selection.py data/processed/titanic_features.csv --target Survived
-
-# 5. Hyperparameter tuning
-$PYTHON src/hyperparameter_tuning.py data/processed/titanic_features.csv \
-  --target Survived --model random_forest --scoring f1
-
-# 6. Evaluation  (paste best params from tuning report)
-$PYTHON src/evaluation.py data/processed/titanic_features.csv \
-  --target Survived --model random_forest \
-  --params '{"max_depth": null, "min_samples_leaf": 1, "min_samples_split": 5, "n_estimators": 400}'
-
-# 7. Final report
-$PYTHON src/report_generation.py titanic
+./workflows/run_pipeline.sh \
+  --dataset data/raw/titanic.csv \
+  --target Survived \
+  --cleaning-config data_cleaning_config.json \
+  --feature-config feature_engineering_config.json \
+  --task unsupervised
 ```
 
 ---
 
-## YouTube Ingestion
+## Testing & Verification
+
+The project includes an end-to-end integration test runner and an isolated unit test suite:
 
 ```bash
-# Ingest a single video
-./.venv/bin/python src/ingest_youtube.py "https://www.youtube.com/watch?v=VIDEO_ID"
+# 1. Run unit tests (edge cases, input validation, math correctness)
+./.venv/bin/python -m unittest tests/test_unit.py
 
-# Batch ingest from urls.txt
-./src/batch_ingest.sh urls.txt
-# Failures are logged to failed_ingests.log
+# 2. Run full 11-stage integration test suite
+./tests/test_all_components.sh
 ```
 
-Then run the extract-methodology skill on the new transcript:
-> "Run the extract-methodology skill on data/transcripts/<filename>.md"
-
 ---
 
-## Knowledge Base
-
-9 methodology notes extracted from StatQuest and other ML educators:
-
-| Topic | File |
-|---|---|
-| Bias and Variance | `data/knowledge/bias-and-variance.md` |
-| Cross-Validation | `data/knowledge/cross-validation.md` |
-| Train/Test Split vs K-Fold vs Stratified K-Fold | `data/knowledge/train-test-split-vs-k-fold-vs-stratified-k-fold.md` |
-| Ridge Regression (L2) | `data/knowledge/regularization-part-1-ridge-l2-regression.md` |
-| Lasso Regression (L1) | `data/knowledge/regularization-part-2-lasso-l1-regression.md` |
-| GridSearchCV Hyperparameter Tuning | `data/knowledge/gridsearchcv-hyperparameter-tuning.md` |
-| Gradient Boost — Regression Main Ideas | `data/knowledge/gradient-boost-part-1-regression-main-ideas.md` |
-| Confusion Matrix | `data/knowledge/confusion-matrix.md` |
-| ROC and AUC | `data/knowledge/roc-and-auc.md` |
-
----
-
-## Validated Pipelines
-
-### Titanic (Classification)
-- **Model**: Random Forest
-- **Test Accuracy**: 0.7709 | **AUC**: 0.8370 | **F1**: 0.6870
-- **Best params**: `n_estimators=400, max_depth=None, min_samples_split=5, min_samples_leaf=1`
-- **Final report**: `reports/FINAL_REPORT_titanic_2026-09-13.md`
-
-### Melbourne Housing (Regression)
-- **Model**: Random Forest
-- **Final report**: `reports/FINAL_REPORT_melbourne_housing_2026-09-13.md`
-
----
-
-## Setup
+## Setup & Dependencies
 
 ```bash
 python3 -m venv .venv
-./.venv/bin/pip install pandas openpyxl scikit-learn matplotlib yt-dlp youtube-transcript-api
+source .venv/bin/activate
+pip install pandas openpyxl scikit-learn matplotlib xgboost imbalanced-learn scipy yt-dlp youtube-transcript-api
 ```
 
 ---
 
 ## Design Principles
 
-- **Source fidelity**: Knowledge notes contain only what the video actually says — no external knowledge added.
-- **Read-only profiling**: The profiling stage never modifies data.
-- **Plan before acting**: The cleaning skill proposes a plan and waits for approval before touching data.
-- **Auditability**: Every pipeline stage writes a report. The final report combines them all.
-- **No silent drops**: Outliers are flagged, never automatically removed.
+- **Strict Source Fidelity**: Methodology notes contain strictly what the primary source explains — zero external assumptions added.
+- **Read-Only Profiling**: Profiling never mutates raw data.
+- **Config-Driven Cleaning**: Transformations are auditable and reproducible via explicit configuration JSONs.
+- **Auditability**: Every stage writes timestamped markdown logs and metrics.
+- **Production Guardrails**: SVR iterations and parallelism are tuned per model to prevent worker deadlocks on large datasets.
