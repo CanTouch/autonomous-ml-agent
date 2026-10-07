@@ -286,15 +286,83 @@ if report_path and report_path.exists():
         plot_cols = st.columns(min(len(plot_files), 2))
         for idx, ppath in enumerate(plot_files):
             with plot_cols[idx % 2]:
-                st.image(str(ppath), caption=ppath.name, use_column_width=True)
+                st.image(str(ppath), caption=ppath.name)
 
-    # Full Master Report
+    # Export Trained Model and Predictions Buttons
+    st.write("### 💾 Export Model & Predictions")
+    dl_c1, dl_c2, dl_c3 = st.columns(3)
+
+    # 1. Download Master Report
+    with dl_c1:
+        st.download_button(
+            label="📄 Download Executive Report",
+            data=report_content,
+            file_name=report_path.name,
+            mime="text/markdown",
+            use_container_width=True,
+        )
+
+    # 2. Download Trained Model (.joblib)
+    saved_models = list(Path("reports").glob(f"model_*_{stem}.joblib"))
+    with dl_c2:
+        if saved_models:
+            latest_model = sorted(saved_models)[-1]
+            with open(latest_model, "rb") as mf:
+                st.download_button(
+                    label=f"💾 Download Model ({latest_model.stem.split('_')[1]})",
+                    data=mf.read(),
+                    file_name=latest_model.name,
+                    mime="application/octet-stream",
+                    use_container_width=True,
+                )
+        else:
+            st.button("💾 Model (.joblib)", disabled=True, use_container_width=True)
+
+    # 3. Download Predictions CSV
+    saved_preds = list(Path("reports").glob(f"predictions_*_{stem}.csv"))
+    with dl_c3:
+        if saved_preds:
+            latest_pred = sorted(saved_preds)[-1]
+            pred_text = latest_pred.read_text()
+            st.download_button(
+                label="📊 Download Predictions (CSV)",
+                data=pred_text,
+                file_name=latest_pred.name,
+                mime="text/csv",
+                use_container_width=True,
+            )
+        else:
+            st.button("📊 Predictions (CSV)", disabled=True, use_container_width=True)
+
+    # Live Batch Scoring
+    if saved_models:
+        latest_model_path = sorted(saved_models)[-1]
+        with st.expander("🔮 Batch Prediction on New Unlabelled Data", expanded=False):
+            st.write("Upload a new dataset with the same features to generate predictions using the trained champion model.")
+            batch_file = st.file_uploader("Upload CSV for Scoring", type=["csv"], key="batch_scoring_uploader")
+            if batch_file is not None:
+                import joblib
+                batch_df = pd.read_csv(batch_file)
+                st.write(f"Loaded {len(batch_df)} rows for prediction.")
+                try:
+                    loaded_model = joblib.load(latest_model_path)
+                    pred_res = batch_df.copy()
+                    # Align feature columns if possible
+                    feature_cols = [c for c in loaded_model.feature_names_in_ if c in batch_df.columns] if hasattr(loaded_model, "feature_names_in_") else batch_df.columns
+                    preds = loaded_model.predict(batch_df[feature_cols])
+                    pred_res["model_prediction"] = preds
+                    if hasattr(loaded_model, "predict_proba"):
+                        pred_res["prediction_probability"] = loaded_model.predict_proba(batch_df[feature_cols])[:, 1]
+                    st.dataframe(pred_res.head(10))
+                    st.download_button(
+                        label="📥 Download Scored CSV",
+                        data=pred_res.to_csv(index=False),
+                        file_name=f"scored_{batch_file.name}",
+                        mime="text/csv",
+                    )
+                except Exception as e:
+                    st.error(f"Prediction error: {e}. Ensure features match the trained model.")
+
+    # Full Master Report Expander
     with st.expander("📄 Full Markdown Master Report", expanded=False):
         st.markdown(report_content)
-
-    st.download_button(
-        label="📥 Download Executive Report (Markdown)",
-        data=report_content,
-        file_name=report_path.name,
-        mime="text/markdown",
-    )

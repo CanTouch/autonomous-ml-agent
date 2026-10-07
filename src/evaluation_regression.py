@@ -8,10 +8,17 @@ import json
 import ast
 from pathlib import Path
 from datetime import date
-import pandas as pd
+import os
+import tempfile
+if "MPLCONFIGDIR" not in os.environ:
+    os.environ["MPLCONFIGDIR"] = os.path.join(tempfile.gettempdir(), "matplotlib")
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import joblib
+from sklearn.inspection import permutation_importance
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor
@@ -61,6 +68,8 @@ def evaluate(df: pd.DataFrame, target: str, model_key: str, params: dict, test_s
     clean_params = {k: v for k, v in params.items() if v is not None}
     if model_key == "svm":
         clean_params.setdefault("max_iter", 2000)
+    elif model_key in ("random_forest", "xgboost"):
+        clean_params.setdefault("n_jobs", -1)
     if model_key in ("linear_regression", "svm"):
         model = model_cls(**clean_params)
     else:
@@ -77,7 +86,60 @@ def evaluate(df: pd.DataFrame, target: str, model_key: str, params: dict, test_s
 
     residuals = y_test - y_pred
 
-    return metrics, y_test, y_pred, residuals
+    return metrics, y_test, y_pred, residuals, model, X_test
+
+
+def write_feature_importance_plot(model, X_test, y_test, model_key, dataset_name, output_dir="reports"):
+    Path(output_dir).mkdir(exist_ok=True)
+    today = date.today().isoformat()
+    out_path = Path(output_dir) / f"feature_importance_regression_{model_key}_{dataset_name}_{today}.png"
+
+    feature_names = X_test.columns
+    if hasattr(model, "feature_importances_"):
+        importances = model.feature_importances_
+    elif hasattr(model, "coef_"):
+        coef = model.coef_
+        importances = np.abs(coef.ravel() if coef.ndim > 1 else coef)
+        if len(importances) != len(feature_names):
+            importances = np.mean(np.abs(coef), axis=0) if coef.ndim > 1 else np.abs(coef)
+    else:
+        eval_X = X_test
+        eval_y = y_test
+        if len(X_test) > 200:
+            eval_X = X_test.sample(n=200, random_state=42)
+            eval_y = y_test.loc[eval_X.index]
+        perm = permutation_importance(model, eval_X, eval_y, n_repeats=3, random_state=42)
+        importances = perm.importances_mean
+
+    indices = np.argsort(importances)[::-1][:10]
+    top_feats = [feature_names[i] for i in indices]
+    top_scores = [importances[i] for i in indices]
+
+    plt.figure(figsize=(8, 5))
+    plt.barh(range(len(top_feats)), top_scores[::-1], color="#10B981")
+    plt.yticks(range(len(top_feats)), top_feats[::-1])
+    plt.xlabel("Mean Permutation Importance (Drop in R²)")
+    plt.title(f"Top Feature Drivers — {model_key} on {dataset_name}")
+    plt.tight_layout()
+    plt.savefig(out_path)
+    plt.close()
+    print(f"Feature importance plot written to: {out_path}")
+    return str(out_path)
+
+
+def save_artifacts(model, X_test, y_test, y_pred, residuals, model_key, dataset_name, output_dir="reports"):
+    Path(output_dir).mkdir(exist_ok=True)
+    model_path = Path(output_dir) / f"model_regression_{model_key}_{dataset_name}.joblib"
+    joblib.dump(model, model_path)
+    print(f"Trained regression model saved to: {model_path}")
+
+    pred_path = Path(output_dir) / f"predictions_regression_{model_key}_{dataset_name}.csv"
+    pred_df = X_test.copy()
+    pred_df["actual"] = y_test
+    pred_df["predicted"] = y_pred
+    pred_df["residual"] = residuals
+    pred_df.to_csv(pred_path, index=False)
+    print(f"Test set regression predictions saved to: {pred_path}")
 
 
 def write_residual_plot(y_test, y_pred, residuals, model_key, dataset_name, output_dir="reports"):
@@ -143,7 +205,7 @@ if __name__ == "__main__":
     except Exception:
         params = ast.literal_eval(args.params)
 
-    metrics, y_test, y_pred, residuals = evaluate(df, args.target, args.model, params, args.test_size)
+    metrics, y_test, y_pred, residuals, model, X_test = evaluate(df, args.target, args.model, params, args.test_size)
 
     dataset_name = (
         Path(args.dataset_path).stem
@@ -153,4 +215,6 @@ if __name__ == "__main__":
         .replace("_cleaned", "")
     )
     write_residual_plot(y_test, y_pred, residuals, args.model, dataset_name)
+    write_feature_importance_plot(model, X_test, y_test, args.model, dataset_name)
+    save_artifacts(model, X_test, y_test, y_pred, residuals, args.model, dataset_name)
     write_report(metrics, args.model, dataset_name)

@@ -54,6 +54,7 @@ def find_plots(dataset_name: str, reports_dir: str = "reports"):
     plot_patterns = [
         f"roc_curve_*_{dataset_name}_*.png",
         f"residuals_*_{dataset_name}_*.png",
+        f"feature_importance_*_{dataset_name}_*.png",
         f"pca_scree_{dataset_name}_*.png",
         f"pca_2d_{dataset_name}_*.png",
         f"kmeans_elbow_{dataset_name}_*.png",

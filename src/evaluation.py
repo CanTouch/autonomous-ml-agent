@@ -8,10 +8,17 @@ import json
 import ast
 from pathlib import Path
 from datetime import date
-import pandas as pd
+import os
+import tempfile
+if "MPLCONFIGDIR" not in os.environ:
+    os.environ["MPLCONFIGDIR"] = os.path.join(tempfile.gettempdir(), "matplotlib")
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import joblib
+from sklearn.inspection import permutation_importance
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
@@ -64,7 +71,11 @@ def evaluate(df: pd.DataFrame, target: str, model_key: str, params: dict, test_s
     clean_params = {k: v for k, v in params.items() if v is not None}
     if model_key == "logistic_regression":
         model = model_cls(max_iter=1000, **clean_params)
+    elif model_key == "random_forest":
+        clean_params.setdefault("n_jobs", -1)
+        model = model_cls(random_state=42, **clean_params)
     elif model_key == "xgboost":
+        clean_params.setdefault("n_jobs", -1)
         model = model_cls(random_state=42, eval_metric="logloss", **clean_params)
     else:
         model = model_cls(random_state=42, **clean_params)
@@ -92,10 +103,69 @@ def evaluate(df: pd.DataFrame, target: str, model_key: str, params: dict, test_s
     }
 
     return {
+        "model": model,
+        "X_test": X_test,
+        "y_test": y_test,
+        "y_pred": y_pred,
+        "y_proba": y_proba,
         "tp": int(tp), "tn": int(tn), "fp": int(fp), "fn": int(fn),
         "metrics": metrics,
         "fpr": fpr, "tpr": tpr,
     }
+
+
+def write_feature_importance_plot(model, X_test, y_test, model_key, dataset_name, output_dir="reports"):
+    Path(output_dir).mkdir(exist_ok=True)
+    today = date.today().isoformat()
+    out_path = Path(output_dir) / f"feature_importance_{model_key}_{dataset_name}_{today}.png"
+
+    feature_names = X_test.columns
+    if hasattr(model, "feature_importances_"):
+        importances = model.feature_importances_
+    elif hasattr(model, "coef_"):
+        coef = model.coef_
+        importances = np.abs(coef.ravel() if coef.ndim > 1 else coef)
+        if len(importances) != len(feature_names):
+            importances = np.mean(np.abs(coef), axis=0) if coef.ndim > 1 else np.abs(coef)
+    else:
+        eval_X = X_test
+        eval_y = y_test
+        if len(X_test) > 200:
+            eval_X = X_test.sample(n=200, random_state=42)
+            eval_y = y_test.loc[eval_X.index]
+        perm = permutation_importance(model, eval_X, eval_y, n_repeats=3, random_state=42)
+        importances = perm.importances_mean
+
+    indices = np.argsort(importances)[::-1][:10]
+    top_feats = [feature_names[i] for i in indices]
+    top_scores = [importances[i] for i in indices]
+
+    plt.figure(figsize=(8, 5))
+    plt.barh(range(len(top_feats)), top_scores[::-1], color="#3B82F6")
+    plt.yticks(range(len(top_feats)), top_feats[::-1])
+    plt.xlabel("Mean Permutation Importance (Drop in Score)")
+    plt.title(f"Top Feature Drivers — {model_key} on {dataset_name}")
+    plt.tight_layout()
+    plt.savefig(out_path)
+    plt.close()
+    print(f"Feature importance plot written to: {out_path}")
+    return str(out_path)
+
+
+def save_artifacts(result, model_key, dataset_name, output_dir="reports"):
+    Path(output_dir).mkdir(exist_ok=True)
+    model_path = Path(output_dir) / f"model_{model_key}_{dataset_name}.joblib"
+    joblib.dump(result["model"], model_path)
+    print(f"Trained model saved to: {model_path}")
+
+    pred_path = Path(output_dir) / f"predictions_{model_key}_{dataset_name}.csv"
+    pred_df = result["X_test"].copy()
+    pred_df["actual"] = result["y_test"]
+    pred_df["predicted"] = result["y_pred"]
+    if result["y_proba"] is not None:
+        pred_df["probability"] = result["y_proba"]
+    pred_df.to_csv(pred_path, index=False)
+    print(f"Test set predictions saved to: {pred_path}")
 
 
 def write_roc_plot(fpr, tpr, auc, model_key, dataset_name, output_dir="reports"):
@@ -169,4 +239,6 @@ if __name__ == "__main__":
         .replace("_cleaned", "")
     )
     write_roc_plot(result["fpr"], result["tpr"], result["metrics"]["auc"], args.model, dataset_name)
+    write_feature_importance_plot(result["model"], result["X_test"], result["y_test"], args.model, dataset_name)
+    save_artifacts(result, args.model, dataset_name)
     write_report(result, args.model, dataset_name)
