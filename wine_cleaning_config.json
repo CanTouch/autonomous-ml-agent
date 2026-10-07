@@ -1,0 +1,9 @@
+{
+  "drop_columns": [
+    "malic_acid",
+    "flavanoids",
+    "nonflavanoid_phenols"
+  ],
+  "impute": {},
+  "drop_duplicates": true
+}

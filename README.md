@@ -87,6 +87,26 @@ ml-agent-project/
 
 ---
 
+## Autonomous & Interactive ML Assistant (`src/agent.py`)
+
+The ML Agent provides an interactive wizard and automated entrypoint that inspects datasets, automatically infers tasks, auto-generates cleaning and feature engineering configs, and runs the entire end-to-end pipeline:
+
+### Interactive Wizard
+```bash
+./.venv/bin/python src/agent.py
+```
+
+### Scriptable Execution (Auto-Inference & Auto-Config)
+```bash
+# Auto-detects classification, auto-generates configs, and tunes XGBoost
+./.venv/bin/python src/agent.py --dataset data/raw/heart_disease.csv --target target --model xgboost --feature-selection
+
+# Auto-runs unsupervised PCA, K-Means, and Hierarchical clustering
+./.venv/bin/python src/agent.py --dataset data/raw/wine.csv --task unsupervised
+```
+
+---
+
 ## Automated Pipeline (`workflows/run_pipeline.sh`)
 
 ### Classification Pipeline (Titanic)

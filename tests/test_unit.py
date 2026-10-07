@@ -139,5 +139,57 @@ class TestModelSelectionValidation(unittest.TestCase):
             run_model_selection(df, target="target")
 
 
+class TestMLAgent(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        from src.agent import MLAgent
+        self.agent = MLAgent(raw_data_dir=self.temp_dir, config_dir=self.temp_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+
+    def test_infer_task_type(self):
+        # Binary target
+        df_cls = pd.DataFrame({"x": [1, 2, 3, 4], "y": [0, 1, 0, 1]})
+        self.assertEqual(self.agent.infer_task_type(df_cls, "y"), "classification")
+
+        # Continuous target
+        df_reg = pd.DataFrame({"x": range(50), "y": [i * 1.5 + 0.2 for i in range(50)]})
+        self.assertEqual(self.agent.infer_task_type(df_reg, "y"), "regression")
+
+        # Unsupervised (no target)
+        self.assertEqual(self.agent.infer_task_type(df_cls, None), "unsupervised")
+
+    def test_inspect_and_auto_generate_configs(self):
+        df = pd.DataFrame({
+            "PassengerId": [1, 2, 3, 4],
+            "Age": [22.0, np.nan, 35.0, 40.0],
+            "Sex": ["male", "female", "female", "male"],
+            "target": [0, 1, 1, 0]
+        })
+        csv_path = Path(self.temp_dir) / "test_sample.csv"
+        df.to_csv(csv_path, index=False)
+
+        info = self.agent.inspect_dataset(csv_path)
+        self.assertEqual(info["rows"], 4)
+        self.assertEqual(info["columns"], 4)
+        self.assertIn("target", info["candidate_targets"])
+        self.assertEqual(info["missing_total"], 1)
+
+        clean_cfg, feat_cfg = self.agent.auto_generate_configs(df, target="target", dataset_stem="test_sample")
+        self.assertTrue(clean_cfg.exists())
+        self.assertTrue(feat_cfg.exists())
+
+        clean_data = json.loads(clean_cfg.read_text())
+        feat_data = json.loads(feat_cfg.read_text())
+
+        # ID should be dropped
+        self.assertIn("PassengerId", clean_data["drop_columns"])
+        # Age should have median imputation
+        self.assertIn("Age", clean_data["impute"])
+        # Sex should be one-hot encoded
+        self.assertIn("Sex", feat_data["one_hot_encode"])
+
+
 if __name__ == "__main__":
     unittest.main()
