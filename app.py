@@ -251,6 +251,19 @@ if start_run:
         st.balloons()
     else:
         status_text.error(f"Pipeline encountered an issue (exit code {returncode}).")
+        with st.expander("🔍 Show error details (stdout & stderr)", expanded=True):
+            if hasattr(agent, "last_stderr") and agent.last_stderr:
+                st.subheader("Error Output (stderr)")
+                st.code(agent.last_stderr)
+            elif hasattr(agent, "last_error") and agent.last_error:
+                st.subheader("Error Output (stderr)")
+                st.code(agent.last_error)
+            if hasattr(agent, "last_stdout") and agent.last_stdout:
+                st.subheader("Standard Output (stdout)")
+                st.code(agent.last_stdout)
+            elif hasattr(agent, "last_output") and agent.last_output:
+                st.subheader("Standard Output (stdout)")
+                st.code(agent.last_output)
         st.stop()
 
 # --- DISPLAY RESULTS (IF REPORT EXISTS) ---

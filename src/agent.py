@@ -155,9 +155,12 @@ class MLAgent:
         feature_selection: bool = False,
         class_balancing: Optional[str] = None,
     ) -> int:
-        """Invokes workflows/run_pipeline.sh with the configured parameters."""
+        project_root = Path(__file__).resolve().parent.parent
+        script_path = project_root / "workflows" / "run_pipeline.sh"
+
         cmd = [
-            "./workflows/run_pipeline.sh",
+            "bash",
+            str(script_path),
             "--dataset", str(dataset_path),
             "--task", task,
         ]
@@ -185,7 +188,22 @@ class MLAgent:
         print(f" Command: {' '.join(cmd)}")
         print("=" * 60 + "\n")
 
-        res = subprocess.run(cmd)
+        res = subprocess.run(
+            cmd,
+            cwd=str(project_root),
+            env={**os.environ, "PYTHON": sys.executable, "PYTHONPATH": str(project_root)},
+            capture_output=True,
+            text=True,
+        )
+        self.last_output = res.stdout
+        self.last_stdout = res.stdout
+        self.last_error = res.stderr
+        self.last_stderr = res.stderr
+        if res.returncode != 0:
+            if res.stderr:
+                print(f"Pipeline execution stderr:\n{res.stderr}")
+            if res.stdout:
+                print(f"Pipeline execution stdout:\n{res.stdout}")
         return res.returncode
 
 

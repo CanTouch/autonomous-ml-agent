@@ -16,9 +16,9 @@ echo "=================================================="
 echo "Batch Ingesting YouTube URLs from: $URL_FILE"
 echo "=================================================="
 
-PYTHON_BIN="$PROJECT_ROOT/.venv/bin/python"
+PYTHON_BIN="${PYTHON:-$PROJECT_ROOT/.venv/bin/python}"
 if [ ! -x "$PYTHON_BIN" ]; then
-    PYTHON_BIN="python3"
+    PYTHON_BIN="$(command -v python3 || command -v python)"
 fi
 
 TOTAL=0

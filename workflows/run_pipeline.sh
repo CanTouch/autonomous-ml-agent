@@ -36,10 +36,15 @@
 
 set -euo pipefail
 
+# Ensure execution always occurs from the repository root
+cd "$(dirname "$0")/.."
+
+PYTHON="${PYTHON:-python3}"
+export PYTHONPATH="${PWD}:${PYTHONPATH:-}"
 export MPLCONFIGDIR="${PWD}/.cache/matplotlib"
 mkdir -p "$MPLCONFIGDIR"
 
-PYTHON="./.venv/bin/python"
+trap 'echo "ERROR: Pipeline step failed at line $LINENO (command: $BASH_COMMAND)" >&2' ERR
 
 # ---- Defaults ----------------------------------------------------------------
 TASK="classification"

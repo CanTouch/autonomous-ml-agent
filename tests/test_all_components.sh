@@ -8,7 +8,13 @@ set -euo pipefail
 export MPLCONFIGDIR="${PWD}/.cache/matplotlib"
 mkdir -p "$MPLCONFIGDIR"
 
-PYTHON="./.venv/bin/python"
+if [ -z "${PYTHON:-}" ]; then
+  if [ -f "./.venv/bin/python" ]; then
+    PYTHON="./.venv/bin/python"
+  else
+    PYTHON="$(command -v python3 || command -v python)"
+  fi
+fi
 DATE=$(date +%F)
 
 echo "============================================================"
